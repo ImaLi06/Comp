@@ -17,33 +17,31 @@ typedef long long ll;
   }
 
 void solve() {
-  ll n, m, k;
-  cin >> n >> m >> k;
+  ll p, q;
+  cin >> p >> q;
+  ll tot = p + 2 * q;
 
-  ll mcmm = (m * n) / gcd(m, n);
+  for (ll i = 1; i * i <= tot; i++) {
+    ll res = tot - i;
+    ll mul = i * 2 + 1;
+    ll rr = res / mul;
 
-  ll l = 1;
-  ll r = 1000000000000000000;
-  ll ans = 1;
-  while (l <= r) {
-    ll mid = (l + r) / 2;
-    ll cnt = (mid / n) + (mid / m) - 2 * (mid / mcmm);
-    if (cnt < k)
-      l = mid + 1;
-    else {
-      r = mid - 1;
-      ans = mid;
+    ll dif = abs(rr - i);
+
+    if (rr + i + rr * i * 2 == tot && dif <= p) {
+      cout << rr << " " << i << "\n";
+      return;
     }
   }
 
-  cout << ans;
+  cout << "-1\n";
 }
 
 int main() {
   ios_base::sync_with_stdio(false);
   cin.tie(NULL);
   int tt = 1;
-  // cin >> tt;
+  cin >> tt;
   while (tt--)
     solve();
 }
