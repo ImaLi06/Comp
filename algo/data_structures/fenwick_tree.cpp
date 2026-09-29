@@ -1,14 +1,22 @@
-int ft[MAXN + 1];         // add dimension for multi-d
-void upd(int i0, int v) { // add v to i0th element
-  for (int i = i0 + 1; i <= MAXN; i += i & -i)
-    ft[i] += v; //+ fors
-}
-int get(int i0) { // get sum of range [0,i0)
-  int r = 0;      // add fors
-  for (int i = i0; i; i -= i & -i)
-    r += ft[i];
-  return r;
-}
-int get_sum(int i0, int i1) { // sum of [i0,i1)
-  return get(i1) - get(i0);
-}
+struct FTree {
+  typedef ll tn;
+  static constexpr tn NEUT = 0;
+  static tn oper(tn a, tn b) { return a + b; }
+  vector<tn> ft;
+  int n;
+  FTree(int n) : ft(n + 1, NEUT), n(n) {} // build: for i in [0,n): upd(i, a[i])
+  void upd(int p, tn v) {                 // a[p] = oper(a[p], v)
+    for (int i = p + 1; i <= n; i += i & -i)
+      ft[i] = oper(ft[i], v);
+  }
+  tn get(int p) { // oper of [0,p)
+    tn r = NEUT;
+    for (int i = p; i; i -= i & -i)
+      r = oper(r, ft[i]);
+    return r;
+  }
+  tn query(int a, int b) {
+    return get(b) - get(a);
+  } // [a,b), inverse of oper (xor: ^)
+};
+// *min/max: only prefix get(), and updates may only improve a[p]

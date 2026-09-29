@@ -20,7 +20,6 @@ ll kruskal() {                       // assumes graph is connected
   for (int i = 0; i < es.size(); i++) {
     int x = es[i].se.fi, y = es[i].se.se;
     if (uf_join(x, y)) {
-
       r += es[i].fi; // (x,y,c) belongs to mst
     }
   }
