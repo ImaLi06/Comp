@@ -1,156 +1,120 @@
-#include <bits/stdc++.h>
-using namespace std;
-typedef long long ll;
-#define MAXN 1000000
-#define MOD 9302023
-#define INF 1e9
-#define fi first
-#define se second
-#define print(v)                                                               \
-  for (auto &x : v)                                                            \
-    cout << x << ' ';                                                          \
-  cout << '\n'
-#define printm(m)                                                              \
-  for (auto &row : m) {                                                        \
-    for (auto &x : row)                                                        \
-      cout << x << ' ';                                                        \
-    cout << '\n';                                                              \
-  }
-struct Node {
-  ll cval;
-  ll oval;
-};
-struct LNode {
-  ll t;
-  ll val;
-};
-typedef Node tn;     // segment-tree node type
-typedef LNode tl;    // lazy type
-#define NEUT {0, 0}  // operation neutral
-#define CLEAR {0, 0} // cleared lazy node
-tn oper(tn a, tn b) { return {a.cval + b.cval, a.oval + b.oval}; }
-void acum(tl &a, tl v) { a = v; }
-tn calc(int s, int e, tn a, tl v) {
-  if (v.t == 1)
-    a.cval = 0;
-  else if (v.t == 2)
-    a.cval = a.oval;
-  else if (v.t == 3)
-    a.cval = v.val;
-  return a;
+// ===== common (both versions): gcd, mulmod, expmod, is_prime_prob, rabin =====
+ll gcd(ll a, ll b) { return a ? gcd(b % a, a) : b; }
+ll mulmod(ll a, ll b, ll m) {
+  ll r = a * b - (ll)((long double)a * b / m + .5) * m;
+  return r < 0 ? r + m : r;
 }
-struct STree {
-  vector<tn> st;
-  vector<tl> lazy;
-  int n;
-  STree(int n) : st(4 * n + 5, NEUT), lazy(4 * n + 5, CLEAR), n(n) {}
-  void init(int k, int s, int e, vector<tn> &a) {
-    if (e - s == 1)
-      st[k] = a[s];
-    else {
-      int m = (s + e) / 2;
-      init(2 * k, s, m, a);
-      init(2 * k + 1, m, e, a);
-      st[k] = oper(st[2 * k], st[2 * k + 1]);
-    }
+ll expmod(ll b, ll e, ll m) {
+  if (!e)
+    return 1;
+  ll q = expmod(b, e / 2, m);
+  q = mulmod(q, q, m);
+  return e & 1 ? mulmod(b, q, m) : q;
+}
+bool is_prime_prob(ll n, int a) {
+  if (n == a)
+    return true;
+  ll s = 0, d = n - 1;
+  while (d % 2 == 0)
+    s++, d /= 2;
+  ll x = expmod(a, d, n);
+  if ((x == 1) || (x + 1 == n))
+    return true;
+  fore(_, 0, s - 1) {
+    x = mulmod(x, x, n);
+    if (x == 1)
+      return false;
+    if (x + 1 == n)
+      return true;
   }
-  void push(int k, int s, int e) {
-    if (lazy[k].t == 0)
-      return;
-    st[k] = calc(s, e, st[k], lazy[k]);
-    if (e - s != 1) {
-      acum(lazy[2 * k], lazy[k]);
-      acum(lazy[2 * k + 1], lazy[k]);
-    }
-    lazy[k] = CLEAR;
+  return false;
+}
+bool rabin(ll n) { // true iff n is prime
+  if (n == 1)
+    return false;
+  int ar[] = {2, 3, 5, 7, 11, 13, 17, 19, 23};
+  fore(i, 0, 9) if (!is_prime_prob(n, ar[i])) return false;
+  return true;
+}
+// ===== basic version: rho, fact =====
+ll rho(ll n) {
+  if (!(n & 1))
+    return 2;
+  ll x = 2, y = 2, d = 1;
+  ll c = rand() % n + 1;
+  while (d == 1) {
+    x = (mulmod(x, x, n) + c) % n;
+    y = (mulmod(y, y, n) + c) % n;
+    y = (mulmod(y, y, n) + c) % n;
+    if (x >= y)
+      d = gcd(x - y, n);
+    else
+      d = gcd(y - x, n);
   }
-  void upd(int k, int s, int e, int a, int b, tl v) {
-    push(k, s, e);
-    if (e <= a || b <= s)
-      return;
-    if (a <= s && e <= b) {
-      acum(lazy[k], v);
-      push(k, s, e);
-      return;
-    }
-    int m = (s + e) / 2;
-    upd(2 * k, s, m, a, b, v), upd(2 * k + 1, m, e, a, b, v);
-    st[k] = oper(st[2 * k], st[2 * k + 1]);
+  return d == n ? rho(n) : d;
+}
+void fact(ll n, map<ll, int> &f) { // O (lg n)^3
+  if (n == 1)
+    return;
+  if (rabin(n)) {
+    f[n]++;
+    return;
   }
-  tn query(int k, int s, int e, int a, int b) {
-    if (e <= a || b <= s)
-      return NEUT;
-    push(k, s, e);
-    if (a <= s && e <= b)
-      return st[k];
-    int m = (s + e) / 2;
-    return oper(query(2 * k, s, m, a, b), query(2 * k + 1, m, e, a, b));
-  }
-  int search(int k, int s, int e, ll acc, ll obj) {
-    if (s + 1 == e)
-      return s;
-    push(k, s, e);
-    int m = (s + e) / 2;
-    push(k * 2, s, m);
-    if (acc + st[k * 2].cval > obj) {
-      return search(k * 2, s, m, acc, obj);
-    }
-    push(k * 2 + 1, m, e);
-    return search(k * 2 + 1, m, e, acc + st[k * 2].cval, obj);
-  }
-  void upd(int a, int b, tl v) { upd(1, 0, n, a, b, v); }
-  tn query(int a, int b) { return query(1, 0, n, a, b); }
-  void init(vector<tn> &a) { init(1, 0, n, a); }
-  int search(ll obj) { return search(1, 0, n, 0, obj); }
-};
-void solve() {
-  ll n, m;
-  cin >> n >> m;
-  vector<ll> a(n);
-  for (int i = 0; i < n; i++)
-    cin >> a[i];
-  vector<Node> base;
-  for (int i = 0; i < n; i++)
-    base.push_back({a[i], a[i]});
-  vector<ll> pref = a;
-  for (int i = 1; i < n; i++)
-    pref[i] = pref[i - 1] + a[i];
-  STree st(n);
-  st.init(base);
-  while (m--) {
-    int t;
-    cin >> t;
-    if (t == 1) {
-      ll b, v;
-      cin >> b >> v;
-      Node sum = st.query(0, b);
-      int limit = st.search(sum.cval - v);
-      if (sum.cval - v < 0) {
-        st.upd(0, b, {1, 0});
-        continue;
+  ll q = rho(n);
+  fact(q, f);
+  fact(n / q, f);
+}
+// ===== optimized version: replace basic rho and fact with the following =====
+// (MAXP, sv, add, rho, init_sv, fact)
+const int MAXP = 1e6 + 1; // sieve size
+int sv[MAXP];             // sieve
+ll add(ll a, ll b, ll m) { return (a += b) < m ? a : a - m; }
+ll rho(ll n) {
+  static ll s[MAXP];
+  while (1) {
+    ll x = rand() % n, y = x, c = rand() % n;
+    ll *px = s, *py = s, v = 0, p = 1;
+    while (1) {
+      *py++ = y = add(mulmod(y, y, n), c, n);
+      *py++ = y = add(mulmod(y, y, n), c, n);
+      if ((x = *px++) == y)
+        break;
+      ll t = p;
+      p = mulmod(p, abs(y - x), n);
+      if (!p)
+        return gcd(t, n);
+      if (++v == 26) {
+        if ((p = gcd(p, n)) > 1 && p < n)
+          return p;
+        v = 0;
       }
-      Node subsum = {0, 0};
-      if (limit + 1 < b) {
-        subsum = st.query(limit + 1, b);
-        st.upd(limit + 1, b, {1, 0});
-      }
-      ll nval = st.query(limit, limit + 1).cval - v + subsum.cval;
-      st.upd(limit, limit + 1, {3, nval});
-    } else {
-      int l, r;
-      cin >> l >> r;
-      ll summ = st.query(l - 1, r).cval;
-      ll oris = pref[r - 1] - (l - 2 >= 0 ? pref[l - 2] : 0);
-      cout << oris - summ << "\n";
-      st.upd(l - 1, r, {2, 0});
     }
+    if (v && (p = gcd(p, n)) > 1 && p < n)
+      return p;
   }
 }
-int main() {
-  ios_base::sync_with_stdio(false);
-  cin.tie(NULL);
-  int tt = 1;
-  // cin >> tt;
-  while (tt--)
-    solve();
+void init_sv() {
+  fore(i, 2, MAXP) if (!sv[i]) for (ll j = i; j < MAXP; j += i) sv[j] = i;
 }
+void fact(ll n, map<ll, int> &f) { // call init_sv first!!!
+  for (auto &&p : f) {
+    while (n % p.fst == 0) {
+      p.snd++;
+      n /= p.fst;
+    }
+  }
+  if (n < MAXP)
+    while (n > 1)
+      f[sv[n]]++, n /= sv[n];
+  else if (rabin(n))
+    f[n]++;
+  else {
+    ll q = rho(n);
+    fact(q, f);
+    fact(n / q, f);
+  }
+}
+// usage:
+//   rabin(n)              -> true iff n is prime (n <= ~1e18)
+//   map<ll, int> f;       // f[p] = exponent of p in n
+//   fact(n, f);           // optimized version: call init_sv() once before
